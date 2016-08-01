@@ -2,10 +2,12 @@ package com.vicky.pullrefresh.holder;
 
 import android.animation.ValueAnimator;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.vicky.pullrefresh.demo.ViewUtil;
+import com.vicky.pullrefresh.view.ExRecyclerView;
 
 /**
  * BaseHolder for header and footer view holder
@@ -68,6 +70,10 @@ public class BaseHolder extends RecyclerView.ViewHolder{
         }
     }
 
+    public void refreshStatus(int status){
+
+    }
+
     /**
      * when pull down or up
      *
@@ -81,10 +87,12 @@ public class BaseHolder extends RecyclerView.ViewHolder{
      * when release pull
      */
     public  void onReleaseToRefresh(){
-        resizeTo(mNormalHeight,true);
+
     };
 
-    public void onRefreshing(){};
+    public void onRefreshing(){
+        resizeTo(mNormalHeight,true);
+    };
 
     public void onRefreshComplete(){
         resizeTo(0,true);

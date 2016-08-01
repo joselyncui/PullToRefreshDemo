@@ -55,8 +55,7 @@ public class MainActivity extends AppCompatActivity {
         mRecyclerView.setOnRefreshListener(new ExRecyclerView.OnRefreshlistener() {
             @Override
             public void onRefresh() {
-                mAdapter.notifyDataSetChanged();
-                mRecyclerView.refreshComplete();
+                new RefreshTask().execute();
             }
 
             @Override
@@ -66,6 +65,24 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+    }
+
+    class RefreshTask extends  AsyncTask<Void,Void,Void>{
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            mRecyclerView.refreshComplete();
+        }
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
     }
 
     class MyTask extends AsyncTask<Void,Void,Void>{

@@ -22,11 +22,13 @@ public class ExRecyclerView extends RecyclerView {
 
     public static final int STATUS_PULL_DOWN = 0X01;//pulling down
     public static final int STATUS_PULL_DOWN_REFRESHING = 0X02;//refreshing
-    public static final int STATUS_PULL_DOWN_RELEASE = 0X03;//pull down release
+    public static final int STATUS_PULL_DOWN_RELEASE_TO_REFRESH = 0X03;//pull down release to refresh
+    public static final int STATUS_PULL_DOWN_REFRESH_COMPLETE = 0X04;//refresh complete
 
-    public static final int STATUS_PULL_UP = 0X04;//pulling up
-    public static final int STATUS_PULL_UP_REFRESHING = 0X05;//refreshing
-    public static final int STATUS_PULL_UP_RELEASE = 0X06;//pull up release
+    public static final int STATUS_PULL_UP = 0X11;//pulling up
+    public static final int STATUS_PULL_UP_REFRESHING = 0X12;//refreshing
+    public static final int STATUS_PULL_UP_RELEASE_TO_REFRESH = 0X13;//pull up release to refresh
+    public static final int STATUS_PULL_UP_REFRESH_COMPLETE = 0X014;//refresh complete
 
     private int mLastVisiablePosition;
     private int mFirstVisiablePosition;
@@ -39,7 +41,6 @@ public class ExRecyclerView extends RecyclerView {
     private OnRefreshlistener mRefreshListener;
     private BaseHolder mHeaderHolder;
     private BaseHolder mFooterHolder;
-    private int mTriggerDistance = 100;
 
     public ExRecyclerView(Context context) {
         super(context);
@@ -70,49 +71,74 @@ public class ExRecyclerView extends RecyclerView {
             case MotionEvent.ACTION_MOVE:
                 int newY = (int)e.getRawY();
                 int difY = newY-mLastY;
-                Log.i("action move ===","last " + difY +"  " + newY +"  " + isArriveTop());
 
-                if ( isArriveTop()&& difY>0){
+                if ( isArriveTop()&& difY>0){// trigger pull down
                     mHeaderHolder = getHeaderHolder();
                     if (mHeaderHolder!= null){
                         mHeaderHolder.onPull((int)(difY*mFactor));
-                        mCurrentStatus = STATUS_PULL_DOWN;
+
+                        if (Math.abs(difY) >= 300){
+                            mCurrentStatus = STATUS_PULL_DOWN_RELEASE_TO_REFRESH;
+                        } else {
+                            mCurrentStatus = STATUS_PULL_DOWN;
+                        }
+
+                        mHeaderHolder.refreshStatus(mCurrentStatus);
                         return false;
                     }
 
-                } else if (isArriveBottom() && difY<0){
+                } else if (isArriveBottom() && difY<0){//trigger pull up
                     mFooterHolder = getFooterHolder();
                     if (mFooterHolder!= null){
                         mFooterHolder.onPull((int)(-difY*mFactor));
-                        mCurrentStatus = STATUS_PULL_UP;
+                        if (Math.abs(difY)>=300){
+                            mCurrentStatus = STATUS_PULL_UP_RELEASE_TO_REFRESH;
+                        } else {
+                            mCurrentStatus = STATUS_PULL_UP;
+                        }
+                        mFooterHolder.refreshStatus(mCurrentStatus);
                     }
                 }
                 break;
             case MotionEvent.ACTION_UP:
-                if (mCurrentStatus == STATUS_PULL_DOWN){
-                    mHeaderHolder= getHeaderHolder();
-                    if (mHeaderHolder!= null){
-                        mHeaderHolder.onReleaseToRefresh();
-                        if (mRefreshListener!= null){
-                            mRefreshListener.onRefresh();
-                        }
-                        mCurrentStatus = STATUS_PULL_DOWN_RELEASE;
-                    }
+                if (mCurrentStatus == STATUS_PULL_DOWN_RELEASE_TO_REFRESH){
+                    pullDownRefreshing();
+                } else if (mCurrentStatus== STATUS_PULL_DOWN){
+                    refreshComplete();
+                }else if (mCurrentStatus == STATUS_PULL_UP_RELEASE_TO_REFRESH){
+                    pullUpLoadMore();
                 } else if (mCurrentStatus == STATUS_PULL_UP){
-                    mFooterHolder = getFooterHolder();
-                    if (mFooterHolder!= null){
-                        mFooterHolder.onReleaseToRefresh();
-                        if (mRefreshListener!= null){
-                            mRefreshListener.onLoadMore();
-                        }
-                        mCurrentStatus = STATUS_PULL_UP_RELEASE;
-                    }
+                    loadmoreComplete();
                 }
                 break;
         }
         return super.dispatchTouchEvent(e);
     }
 
+
+    private void pullDownRefreshing(){
+        mHeaderHolder= getHeaderHolder();
+        if (mHeaderHolder!= null){
+            mHeaderHolder.onRefreshing();
+            if (mRefreshListener!= null){
+                mRefreshListener.onRefresh();
+            }
+            mCurrentStatus = STATUS_PULL_DOWN_REFRESHING;
+            mHeaderHolder.refreshStatus(mCurrentStatus);
+        }
+    }
+
+    private void pullUpLoadMore(){
+        mFooterHolder = getFooterHolder();
+        if (mFooterHolder!= null){
+            mFooterHolder.onRefreshing();
+            if (mRefreshListener!= null){
+                mRefreshListener.onLoadMore();
+            }
+            mCurrentStatus = STATUS_PULL_UP_REFRESHING;
+        }
+        mFooterHolder.refreshStatus(mCurrentStatus);
+    }
     private boolean isArriveTop(){
         LinearLayoutManager manager = (LinearLayoutManager) getLayoutManager();
         mFirstVisiablePosition = ((LinearLayoutManager)manager).findFirstCompletelyVisibleItemPosition();
@@ -160,12 +186,16 @@ public class ExRecyclerView extends RecyclerView {
         if (mHeaderHolder!= null){
             mHeaderHolder.onRefreshComplete();
         }
+        mCurrentStatus = STATUS_PULL_DOWN_REFRESH_COMPLETE;
+        mHeaderHolder.refreshStatus(mCurrentStatus);
     }
 
     public void loadmoreComplete(){
         if (mFooterHolder!= null){
             mFooterHolder.onRefreshComplete();
         }
+        mCurrentStatus = STATUS_PULL_UP_REFRESH_COMPLETE;
+        mFooterHolder.refreshStatus(mCurrentStatus);
     }
 
     public void setOnRefreshListener(OnRefreshlistener listener){
