@@ -97,6 +97,9 @@ public class ExRecyclerView extends RecyclerView {
                             mCurrentStatus = STATUS_PULL_UP;
                         }
                         mFooterHolder.refreshStatus(mCurrentStatus);
+                        scrollBy(0,-difY);
+                        return false;
+
                     }
                 }
                 break;
@@ -151,7 +154,6 @@ public class ExRecyclerView extends RecyclerView {
 
         int visiableItemCount = manager.getChildCount();
         int totalItemCount = manager.getItemCount();
-
         return visiableItemCount>0 && (mLastVisiablePosition) >= totalItemCount-2;
 
     }
